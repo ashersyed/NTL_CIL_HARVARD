@@ -24,7 +24,10 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import cc.mallet.fst.CRF;
+import cc.mallet.fst.CRFCacheStaleIndicator;
+import cc.mallet.fst.CRFOptimizableByBatchLabelLikelihood;
 import cc.mallet.fst.CRFTrainerByLabelLikelihood;
+import cc.mallet.fst.ThreadedOptimizable;
 import cc.mallet.fst.Transducer.State;
 import cc.mallet.types.Alphabet;
 import cc.mallet.types.FeatureVector;
@@ -32,9 +35,7 @@ import cc.mallet.types.Instance;
 import cc.mallet.types.InstanceList;
 import cc.mallet.types.Sequence;
 import cc.mallet.types.SparseVector;
-
 import dragon.nlp.tool.Lemmatiser;
-
 import banner.types.Sentence;
 
 public class CRFTagger implements Tagger
@@ -73,6 +74,12 @@ public class CRFTagger implements Tagger
 		{
 			ObjectInputStream ois = new ObjectInputStream(new GZIPInputStream(new FileInputStream(f)));
 			CRF model = (CRF) ois.readObject();
+			// construct the finite state machine
+		    model.addFullyConnectedStatesForLabels();
+		    // initialize model's weights
+		    //model.setWeightsDimensionAsIn`(trainingData, false);			
+			//cc.mallet.fst.CRFTrainerByLabelLikelihood 
+			
 			// TODO Test this
 			FeatureSet featureSet = (FeatureSet) ois.readObject();
 			if (lemmatiser != null)
@@ -115,12 +122,21 @@ public class CRFTagger implements Tagger
 			instances.addThruPipe(instance);
 		}
 		CRF model = new CRF(featureSet.getPipe(), null);
+		// construct the finite state machine
+	    model.addFullyConnectedStatesForLabels();
+	    // initialize model's weights
+	    //model.setWeightsDimensionAsIn`(trainingData, false);			
+		//cc.mallet.fst.CRFTrainerByLabelLikelihood 
+		
+	    /**
 		if (order == 1)
 			model.addStatesForLabelsConnectedAsIn(instances);
 		else if (order == 2)
 			model.addStatesForBiLabelsConnectedAsIn(instances);
 		else
 			throw new IllegalArgumentException("Order must be equal to 1 or 2");
+		**/
+	    
 		CRFTrainerByLabelLikelihood crfTrainer = new CRFTrainerByLabelLikelihood(model);
 		// TODO Test CRFTrainerByL1LabelLiklihood & CRFTrainerByStochasticGradient; make configurable
 		// Train on data subsets
